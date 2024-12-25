@@ -23,8 +23,20 @@ class SupabaseAuthenticator:
         return response
     
     def get_user_id(self):
-        if self.sign_in_response.get("data"):
-            return self.sign_in_response["data"]["user"]["id"]
-        else:
-            print("Authentication failed:", self.sign_in_response)
+        try:
+            response = self.client.auth.get_user()
+            user_id = response.user.id
+            return user_id
+        except:
             return None
+        
+    def get_acceess_token(self):
+        try:
+            response = self.client.auth.get_session()
+            access_token = response.access_token
+            return access_token
+        except:
+            return None
+        
+    def get_client(self):
+        return self.client

@@ -16,17 +16,13 @@ class URLData(BaseModel):
     url: str
     reduced_url: str
     summary: str
-    user_id: UUID
+    user_id: str
 
-class BookmarkProcessor:
-    def __init__(self, user_id: UUID, url_reduction_agent: Agent):
-        self.client = self.connect_to_supabase(Config.SUPABASE_URL, Config.SUPABASE_KEY)
-        self.user_id = user_id
+class BookmarkProcessor():
+    def __init__(self, authenticated_client: Client, url_reduction_agent: Agent):
+        self.client = authenticated_client
+        self.user_id = self.client.auth.get_user().user.id
         self.url_reduction_agent = url_reduction_agent
-
-    @staticmethod
-    def connect_to_supabase(url: str, key: str) -> Client:
-        return create_client(url, key)
 
     def url_exists(self, table_name: str, url: str) -> bool:
         response = self.client.table(table_name).select("id").eq("url", url).execute()
@@ -38,7 +34,7 @@ class BookmarkProcessor:
         return reduction_request.data
 
     def insert_data(self, table_name: str, url_data: URLData):
-        response = self.client.table(table_name).insert(url_data.dict()).execute()
+        response = self.client.table(table_name).insert(url_data.model_dump()).execute()
         return response
 
     def save_bookmarks(self, input_urls: List[str], table_name: str):
@@ -67,11 +63,11 @@ if __name__ == "__main__":
     #sign_up_response = auth.sign_up()
     #print(sign_up_response)
     sign_in_response = auth.sign_in_with_password()
-    print(sign_in_response)
     user_id = auth.get_user_id()
+    authenticated_client = auth.get_client()
 
     if user_id is not None:
-        processor = BookmarkProcessor(user_id, url_reduction_agent)
+        processor = BookmarkProcessor(authenticated_client, url_reduction_agent)
         input_urls = ["https://medium.com/analytics-vidhya/a-gentle-introduction-to-data-workflows-with-apache-airflow-and-apache-spark-6c2cd9aee573"]
         table_name = "bookmarks"
 
