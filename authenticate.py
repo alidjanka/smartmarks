@@ -7,15 +7,15 @@ class SupabaseAuthenticator:
     
     def sign_up(self, email, password):
         response = self.client.auth.sign_up({
-            "email": self.email,
-            "password": self.password
+            "email": email,
+            "password": password
         })
         return response
     
     def sign_in_with_password(self, email, password):
         response = self.client.auth.sign_in_with_password({
-            "email": self.email,
-            "password": self.password
+            "email": email,
+            "password": password
         })
         # has access_token and refresh_token, store them in local storage
         self.sign_in_response = response

@@ -2,6 +2,12 @@ from bs4 import BeautifulSoup
 import requests
 from markdownify import markdownify as md
 from io import StringIO
+from pydantic import BaseModel
+
+class Bookmark(BaseModel):
+    title: str
+    url: str
+    md_content: str
 
 class DataExtractor:
     def __init__(self, uploaded_file=None, file_path=None):
@@ -12,9 +18,9 @@ class DataExtractor:
             elif file_path is not None:
                 with open(file_path, 'r', encoding='utf-8') as file:
                     self.content = file.read()
-        
+            else:
+                self.content = None       
     def extract_bookmarks(self):
-        
         soup = BeautifulSoup(self.content, 'html.parser')
         bookmarks = []
 
@@ -33,7 +39,8 @@ class DataExtractor:
                 print(f"Error: {e}")
                 continue
             title = a_tag.get_text()
-            bookmarks.append({'title': title, 'url': url, 'md_content': md_content})
+            bookmark = Bookmark(title=title, url=url, md_content=md_content)
+            bookmarks.append(bookmark)
         
         return bookmarks
     

@@ -1,8 +1,8 @@
 from typing import List
 from pydantic import BaseModel
 
-from config import Config
 from authenticate import SupabaseAuthenticator
+from data_extractor import Bookmark
 
 from pydantic_ai import Agent
 from custom_agents import url_reduction_agent, url_summary_agent
@@ -14,10 +14,11 @@ class URLData(BaseModel):
     summary: str
     user_id: str
 
-class Bookmark(BaseModel):
+class BookmarksSchema(BaseModel):
+    user_id: int
+    url: str 
     title: str
-    url: str
-    md_content: str
+    description: str
 
 class BookmarkProcessor():
     def __init__(self, authenticated_supabase_client: Client, url_reduction_agent: Agent, url_summary_agent: Agent, table="bookmarks"):
@@ -53,10 +54,10 @@ class BookmarkProcessor():
 
                 # llm_response = self.reduce_url(url)
                 llm_response = self.generate_description(bookmark)
-                url_data = URLData(
+                url_data = BookmarksSchema(
                     url=bookmark.url,
                     title=bookmark.title,
-                    llm_description=llm_response.llm_description,
+                    description=llm_response.llm_description,
                     user_id=self.user_id
                 )
 

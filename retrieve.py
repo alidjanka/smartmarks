@@ -1,23 +1,20 @@
-from pinecone.grpc import PineconeGRPC as Pinecone
-from pinecone import ServerlessSpec
-from config import Config
 import json
 from pydantic import BaseModel
 
-class PineconeData(BaseModel):
-    id: int
-    url: str 
-    title: str
-    description: str
+from pinecone.grpc import PineconeGRPC as Pinecone
+from pinecone import ServerlessSpec
+
+from config import Config
+from bookmark_processor import BookmarksSchema
 
 class PineconeRetriever:
-    def __init__(self, index_name, namespace):
+    def __init__(self, index_name: str, namespace: str):
         self.pc = Pinecone(api_key=Config.PINECONE_KEY)
         self.index = self.pc.Index(index_name)
         self.namespace = namespace
-    def split_into_chunks(self, data, chunk_size=96):
+    def split_into_chunks(self, data: BookmarksSchema, chunk_size=96):
         return [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
-    def upsert(self, data):
+    def upsert(self, data: BookmarksSchema):
         chunks = self.split_into_chunks(data)
         for data in chunks:
             embeddings = self.pc.inference.embed(
@@ -33,7 +30,6 @@ class PineconeRetriever:
                     # change metadata
                     "metadata": {'url': d['url']}
                 })
-
             # Upsert the records into the index
             self.index.upsert(
                 vectors=records,

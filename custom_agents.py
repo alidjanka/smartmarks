@@ -1,4 +1,5 @@
 from config import Config
+from data_extractor import Bookmark
 
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIModel
@@ -9,14 +10,9 @@ from typing import List
 class URLSummaryResponse(BaseModel):
     llm_description: str
 
-class URLSummaryDeps(BaseModel):
-    title: str
-    url: str
-    md_content: str
-
 url_summary_agent = Agent(
     model=OpenAIModel('gpt-4o-mini', api_key=Config.OPENAI_KEY),
-    deps_type=URLSummaryDeps,
+    deps_type=Bookmark,
     result_type=URLSummaryResponse,
     model_settings={'temperature':0},
     system_prompt=(
@@ -27,7 +23,7 @@ url_summary_agent = Agent(
 )
 
 @url_summary_agent.system_prompt
-async def add_url(ctx: RunContext[URLSummaryDeps]) -> str:
+async def add_url(ctx: RunContext[Bookmark]) -> str:
     return f"URL: {ctx.deps.url}\nTitle:{ctx.deps.title}\nMarkdown Content:{ctx.deps.md_content}"
 
 class URLReductionResponse(BaseModel):
