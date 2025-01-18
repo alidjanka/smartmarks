@@ -8,6 +8,8 @@ openai = "*"
 pydantic-ai = "*"
 supabase = "*"
 python-dotenv = "*"
+pinecone = "*"
+markdownify = "*"
 
 [dev-packages]
 

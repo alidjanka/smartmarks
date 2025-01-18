@@ -4,6 +4,31 @@ from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIModel
 
 from pydantic import BaseModel
+from typing import List
+
+class URLSummaryResponse(BaseModel):
+    llm_description: str
+
+class URLSummaryDeps(BaseModel):
+    title: str
+    url: str
+    md_content: str
+
+url_summary_agent = Agent(
+    model=OpenAIModel('gpt-4o-mini', api_key=Config.OPENAI_KEY),
+    deps_type=URLSummaryDeps,
+    result_type=URLSummaryResponse,
+    model_settings={'temperature':0},
+    system_prompt=(
+        """
+        Generate a detailed description with maximum 150 words.
+        """
+    ),
+)
+
+@url_summary_agent.system_prompt
+async def add_url(ctx: RunContext[URLSummaryDeps]) -> str:
+    return f"URL: {ctx.deps.url}\nTitle:{ctx.deps.title}\nMarkdown Content:{ctx.deps.md_content}"
 
 class URLReductionResponse(BaseModel):
     reduced_url: str
@@ -25,3 +50,37 @@ url_reduction_agent = Agent(
 @url_reduction_agent.system_prompt
 async def add_url(ctx: RunContext[str]) -> str:
     return f"URL: {ctx.deps}"
+
+class BookmarkSearchResponse(BaseModel):
+    id: int
+    relevance_score: float
+    reason: str
+
+class BookmarkSearchResponses(BaseModel):
+    response: List[BookmarkSearchResponse]
+
+class BookmarkData(BaseModel):
+    id: int
+    reduced_url: str
+
+class BookmarkSearchDeps(BaseModel):
+    deps: List[BookmarkData]
+
+bookmark_search_agent = Agent(
+    model=OpenAIModel('gpt-4o-mini', api_key=Config.OPENAI_KEY),
+    deps_type=BookmarkSearchDeps,
+    result_type=BookmarkSearchResponses,
+    model_settings={'temperature':0},
+    system_prompt=(
+        """
+        You are a search assistant. Based on the query, give a relevance_score to the URLs below and a short reason for the score.
+        """
+    ),
+)
+
+@bookmark_search_agent.system_prompt
+async def create_url_list(ctx: RunContext[BookmarkSearchDeps]) -> str:
+    url_list = "List of URLs:\n"
+    for bookmark in ctx.deps:
+        url_list += bookmark["reduced_url"] + "\n"
+    return url_list
