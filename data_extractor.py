@@ -3,6 +3,7 @@ import requests
 from markdownify import markdownify as md
 from io import StringIO
 from pydantic import BaseModel
+from typing import List
 
 class Bookmark(BaseModel):
     title: str
@@ -20,7 +21,7 @@ class DataExtractor:
                     self.content = file.read()
             else:
                 self.content = None       
-    def extract_bookmarks(self):
+    def extract_bookmarks(self) -> List[Bookmark]:
         soup = BeautifulSoup(self.content, 'html.parser')
         bookmarks = []
 
@@ -45,7 +46,7 @@ class DataExtractor:
         return bookmarks
     
 if __name__ == "__main__":
-    extractor = DataExtractor()
-    bookmarks=extractor.extract_bookmarks('/home/alican/Documents/bookmarks_1_17_25.html')
+    extractor = DataExtractor('/home/alican/Documents/bookmarks_1_17_25.html')
+    bookmarks=extractor.extract_bookmarks()
     print(len(bookmarks))
     print(bookmarks[1])

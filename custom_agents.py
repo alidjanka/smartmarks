@@ -24,7 +24,7 @@ url_summary_agent = Agent(
 
 @url_summary_agent.system_prompt
 async def add_url(ctx: RunContext[Bookmark]) -> str:
-    return f"URL: {ctx.deps.url}\nTitle:{ctx.deps.title}\nMarkdown Content:{ctx.deps.md_content}"
+    return f"URL: {ctx.deps.url}\nTitle: {ctx.deps.title}\nMarkdown Content: {ctx.deps.md_content}"
 
 class URLReductionResponse(BaseModel):
     reduced_url: str

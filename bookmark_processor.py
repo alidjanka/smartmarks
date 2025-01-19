@@ -4,7 +4,6 @@ from pydantic import BaseModel
 from authenticate import SupabaseAuthenticator
 from data_extractor import Bookmark
 
-from pydantic_ai import Agent
 from custom_agents import url_reduction_agent, url_summary_agent
 from supabase import Client
 
@@ -21,12 +20,15 @@ class BookmarksSchema(BaseModel):
     description: str
 
 class BookmarkProcessor():
-    def __init__(self, authenticated_supabase_client: Client, url_reduction_agent: Agent, url_summary_agent: Agent, table="bookmarks"):
+    def __init__(self, authenticated_supabase_client: Client=None, table_name: str="bookmarks"):
         self.client = authenticated_supabase_client
-        self.user_id = self.client.auth.get_user().user.id
+        if self.client is not None:
+            self.user_id = self.client.auth.get_user().user.id
+        else:
+            self.user_id = None
         self.url_reduction_agent = url_reduction_agent
         self.url_summary_agent = url_summary_agent
-        self.table = table
+        self.table = table_name
 
     def url_exists(self, url: str) -> bool:
         response = self.client.table(self.table).select("id").eq("url", url).execute()
@@ -37,15 +39,15 @@ class BookmarkProcessor():
         reduction_request = self.url_reduction_agent.run_sync('', deps=url)
         return reduction_request.data
     
-    def generate_description(self, bookmark: Bookmark) -> dict:
-        summary_request = self.url_summary_agent.run_sync('', deps=bookmark)
+    async def generate_description(self, bookmark: Bookmark) -> dict:
+        summary_request = await self.url_summary_agent.run('', deps=bookmark)
         return summary_request.data
 
     def insert_data(self, url_data: URLData):
         response = self.client.table(self.table).insert(url_data.model_dump()).execute()
         return response
 
-    def save_bookmarks(self, bookmarks: List[Bookmark], table_name: str):
+    def save_bookmarks(self, bookmarks: List[Bookmark]):
         for bookmark in bookmarks:
             try:
                 if self.url_exists(bookmark.url):
