@@ -8,10 +8,10 @@ openai = "*"
 pydantic-ai = "*"
 supabase = "*"
 python-dotenv = "*"
-pinecone = "*"
 markdownify = "*"
 streamlit = "*"
 aiofiles = "*"
+pinecone = {extras = ["grpc"], version = "*"}
 
 [dev-packages]
 
