@@ -1,8 +1,11 @@
 import json
+from sklearn.preprocessing import normalize
+import numpy as np
 import time
 from pydantic import BaseModel
 from typing import List
 
+from hdbscan import HDBSCAN
 from pinecone.grpc import PineconeGRPC as Pinecone
 from pinecone import ServerlessSpec
 
@@ -72,17 +75,44 @@ class PineconeRetriever:
         )
         return results
     def retrieve_embeddings(self, batch_size=10):
-        vector_data = self.index.fetch(ids=[str(x) for x in range(1,batch_size+1)], namespace=self.namespace)
+        vector_data = self.index.fetch(ids=[str(x) for x in range(1, batch_size + 1)], namespace=self.namespace)
         vectors = vector_data["vectors"]
-        return vectors
+        embeddings = np.array([v["values"] for v in vectors.values()])
+        metadata = [
+            {"id": vid, "url": vdata["metadata"].get("url", ""), "title": vdata["metadata"].get("title", "")}
+            for vid, vdata in vectors.items()
+        ]
+        return embeddings, metadata
+
+    def cluster_embeddings(self, embeddings: np.ndarray, metadata: List[dict], min_cluster_size: int = 5, min_samples: int = None):
+        # HDBSCAN clustering
+        clusterer = HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples, metric='euclidean')
+        #normalized_embeddings = normalize(embeddings, norm='l2')
+        cluster_labels = clusterer.fit_predict(embeddings)
+
+        # Combine metadata with cluster labels
+        clustered_data = [
+            {"id": meta["id"], "url": meta["url"], "cluster": str(label)}
+            for meta, label in zip(metadata, cluster_labels)
+        ]
+        return clustered_data
+
+    def fetch_and_cluster(self, batch_size=10, min_cluster_size=5, min_samples=None):
+        embeddings, metadata = self.retrieve_embeddings(batch_size=batch_size)
+        clustered_data = self.cluster_embeddings(embeddings, metadata, min_cluster_size, min_samples)
+        return clustered_data
 #    def get_recommendations(self, results):
 #        return results['matches']
 
 if __name__ == "__main__":
     #with open("processed_bookmarks.json", 'r') as file:
     #    data = json.load(file)
-    embedder_obj = PineconeRetriever(index_name='smartmarks', namespace='0')
-    vectors = embedder_obj.retrieve_embeddings()
-    print(vectors)
+    retriever = PineconeRetriever(index_name='smartmarks', namespace='0')
+    clustered_data = retriever.fetch_and_cluster(batch_size=100, min_cluster_size=10)
+    print(clustered_data[0])
+    print(len(clustered_data))
+
+    for item in clustered_data[:3]:
+        print(item)
 
     

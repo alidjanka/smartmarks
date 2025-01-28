@@ -12,6 +12,7 @@ markdownify = "*"
 streamlit = "*"
 aiofiles = "*"
 pinecone = {extras = ["grpc"], version = "*"}
+hdbscan = "*"
 
 [dev-packages]
 

@@ -20,3 +20,23 @@ if st.button("Search"):
             st.write(match["metadata"]["url"])
     else:
         st.write("Query is empty")
+elif st.button("Cluster"):
+    clustered_data = pinecone_obj.fetch_and_cluster(batch_size=300, min_cluster_size=3)
+    try:
+        with open('clustered_data.json', 'w') as file:
+            json.dump(clustered_data, file, indent=4)
+    except:
+        pass
+    with st.expander("0"):
+        for item in clustered_data:
+            if item['cluster'] == "0":
+                st.write(item["url"])
+    with st.expander("1"):
+        for item in clustered_data:
+            if item['cluster'] == "1":
+                st.write(item["url"])
+    with st.expander("2"):
+        for item in clustered_data:
+            if item['cluster'] == "2":
+                st.write(item["url"])
+        print("finished")
