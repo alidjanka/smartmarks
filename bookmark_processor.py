@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from authenticate import SupabaseAuthenticator
 from data_extractor import Bookmark
 
-from custom_agents import url_reduction_agent, url_summary_agent
+from custom_agents import url_reduction_agent, url_summary_agent, label_generator_agent, labeler_agent, LabelerDeps
 from supabase import Client
 
 class URLData(BaseModel):
@@ -28,6 +28,8 @@ class BookmarkProcessor():
             self.user_id = None
         self.url_reduction_agent = url_reduction_agent
         self.url_summary_agent = url_summary_agent
+        self.label_generator_agent = label_generator_agent
+        self.labeler_agent = labeler_agent
         self.table = table_name
 
     def url_exists(self, url: str) -> bool:
@@ -42,6 +44,14 @@ class BookmarkProcessor():
     async def generate_description(self, bookmark: Bookmark) -> dict:
         summary_request = await self.url_summary_agent.run('', deps=bookmark)
         return summary_request.data
+    
+    async def generate_labels(self, bookmarks: List[Bookmark]) -> dict:
+        label_request = await self.label_generator_agent.run('', deps=bookmarks)
+        return label_request.data
+    
+    async def label_bookmarks(self, labeler_deps: LabelerDeps) -> dict:
+        labeler_request = await self.labeler_agent.run('', deps=labeler_deps)
+        return labeler_request.data
 
     def insert_data(self, url_data: URLData):
         response = self.client.table(self.table).insert(url_data.model_dump()).execute()
