@@ -21,27 +21,29 @@ class DataExtractor:
                     self.content = file.read()
             else:
                 self.content = None       
-    def extract_bookmarks(self) -> List[Bookmark]:
+    def extract_bookmarks(self, with_content=True) -> List[Bookmark]:
         soup = BeautifulSoup(self.content, 'html.parser')
         bookmarks = []
 
         for a_tag in soup.find_all('a', href=True):
             url = a_tag['href']
-            try:
-                response = requests.get(url)
-                # Check if the request was successful
-                if response.status_code == 200:
-                    html_content = response.text
-                    md_content = md(html_content)
-                else:
-                    print(f"Failed to retrieve the page. Status code: {response.status_code}")
-                    md_content = ''
-            except requests.exceptions.RequestException as e:
-                print(f"Error: {e}")
-                continue
             title = a_tag.get_text()
-            bookmark = Bookmark(title=title, url=url, md_content=md_content)
-            bookmarks.append(bookmark)
+            if with_content:
+                try:
+                    response = requests.get(url)
+                    # Check if the request was successful
+                    if response.status_code == 200:
+                        html_content = response.text
+                        md_content = md(html_content)
+                    else:
+                        print(f"Failed to retrieve the page. Status code: {response.status_code}")
+                        md_content = ''
+                except requests.exceptions.RequestException as e:
+                    print(f"Error: {e}")
+                    continue
+            else:
+                md_content = ''
+            bookmarks.append(Bookmark(title=title, url=url, md_content=md_content))
         
         return bookmarks
     
