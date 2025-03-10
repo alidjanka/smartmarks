@@ -32,7 +32,7 @@ st.write(f"Amount of bookmarks: {len(bookmarks)}")
 
 async def cluster(bookmarks: List[Bookmark]):
     response = await cluster_agent.run("Generate cluster names", deps=bookmarks)
-    return response.data
+    return response.data.cluster_names
 
 async def assign_cluster(bookmarks: List[Bookmark], clusters):
     clustered_bookmarks = defaultdict(list)
@@ -44,8 +44,7 @@ async def assign_cluster(bookmarks: List[Bookmark], clusters):
 # Button to trigger clustering
 if st.button("Cluster"):
     start_time = time.time()
-    response_data = asyncio.run(cluster(bookmarks))
-    st.session_state.clusters = response_data.cluster_names
+    st.session_state.clusters = asyncio.run(cluster(bookmarks))
     st.session_state.clustered_urls = asyncio.run(assign_cluster(bookmarks, st.session_state.clusters))
 
     end_time = time.time()

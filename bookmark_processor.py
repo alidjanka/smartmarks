@@ -1,10 +1,12 @@
 from typing import List
+from collections import defaultdict
 from pydantic import BaseModel
 
 from authenticate import SupabaseAuthenticator
 from data_extractor import Bookmark
 
 from custom_agents import url_reduction_agent, url_summary_agent, label_generator_agent, labeler_agent, LabelerDeps
+from clustering import cluster_agent, cluster_assigner
 from supabase import Client
 
 class URLData(BaseModel):
@@ -35,6 +37,17 @@ class BookmarkProcessor():
     def url_exists(self, url: str) -> bool:
         response = self.client.table(self.table).select("id").eq("url", url).execute()
         return len(response.data) > 0
+    
+    async def cluster(bookmarks: List[Bookmark]) -> list:
+        response = await cluster_agent.run("Generate cluster names", deps=bookmarks)
+        return response.data.cluster_names
+
+    async def assign_cluster(bookmarks: List[Bookmark], clusters) -> dict:
+        clustered_bookmarks = defaultdict(list)
+        for bookmark in bookmarks:
+            response = await cluster_assigner.run("Assign the URL to one of these clusters: " + str(clusters), deps=bookmark)
+            clustered_bookmarks[response.data.cluster_name].append(bookmark.url)
+        return clustered_bookmarks
 
     def reduce_url(self, url: str) -> dict:
         # run sync takes time, try async
