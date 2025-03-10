@@ -28,43 +28,25 @@ class BookmarkProcessor():
             self.user_id = self.client.auth.get_user().user.id
         else:
             self.user_id = None
-        self.url_reduction_agent = url_reduction_agent
-        self.url_summary_agent = url_summary_agent
-        self.label_generator_agent = label_generator_agent
-        self.labeler_agent = labeler_agent
+        self.cluster_agent = cluster_agent
+        self.cluster_assigner = cluster_assigner
         self.table = table_name
 
     def url_exists(self, url: str) -> bool:
         response = self.client.table(self.table).select("id").eq("url", url).execute()
         return len(response.data) > 0
     
-    async def cluster(bookmarks: List[Bookmark]) -> list:
+    async def get_clusters(self, bookmarks: List[Bookmark]) -> list:
         response = await cluster_agent.run("Generate cluster names", deps=bookmarks)
         return response.data.cluster_names
 
-    async def assign_cluster(bookmarks: List[Bookmark], clusters) -> dict:
-        clustered_bookmarks = defaultdict(list)
+    async def assign_cluster(self, bookmarks: List[Bookmark], clusters) -> dict:
+        clustered_bookmarks = {} # defaultdict(list)
         for bookmark in bookmarks:
             response = await cluster_assigner.run("Assign the URL to one of these clusters: " + str(clusters), deps=bookmark)
-            clustered_bookmarks[response.data.cluster_name].append(bookmark.url)
+            clustered_bookmarks[bookmark.url] = response.data.cluster_name
+            #clustered_bookmarks[response.data.cluster_name].append(bookmark.url)
         return clustered_bookmarks
-
-    def reduce_url(self, url: str) -> dict:
-        # run sync takes time, try async
-        reduction_request = self.url_reduction_agent.run_sync('', deps=url)
-        return reduction_request.data
-    
-    async def generate_description(self, bookmark: Bookmark) -> dict:
-        summary_request = await self.url_summary_agent.run('', deps=bookmark)
-        return summary_request.data
-    
-    async def generate_labels(self, bookmarks: List[Bookmark]) -> dict:
-        label_request = await self.label_generator_agent.run('', deps=bookmarks)
-        return label_request.data
-    
-    async def label_bookmarks(self, labeler_deps: LabelerDeps) -> dict:
-        labeler_request = await self.labeler_agent.run('', deps=labeler_deps)
-        return labeler_request.data
 
     def insert_data(self, url_data: URLData):
         response = self.client.table(self.table).insert(url_data.model_dump()).execute()

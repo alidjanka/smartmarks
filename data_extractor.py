@@ -9,7 +9,9 @@ class Bookmark(BaseModel):
     title: Optional[str] = Field(default='')
     url: str
     md_content: Optional[str] = Field(default='')
+    cluster: Optional[str] = Field(default='')
     added_date: Optional[int] = Field(default=None)
+
 
 class DataExtractor:
     def __init__(self, uploaded_file=None, file_path=None):
@@ -29,7 +31,6 @@ class DataExtractor:
         for a_tag in soup.find_all('a', href=True):
             url = a_tag['href']
             added_date = a_tag['add_date']
-            print(added_date)
             title = a_tag.get_text()
             if with_content:
                 try:
@@ -46,7 +47,7 @@ class DataExtractor:
                     continue
             else:
                 md_content = ''
-            bookmarks.append(Bookmark(title=title, url=url, md_content=md_content))
+            bookmarks.append(Bookmark(title=title, url=url, added_date=added_date))
         
         return bookmarks
     
