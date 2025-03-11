@@ -32,14 +32,14 @@ if "clusters" not in st.session_state:
 if "clustered_urls" not in st.session_state:
     st.session_state.clustered_urls = None
 if "filtered_bookmarks" not in st.session_state:
-    st.session_state.filtered_bookmarks = []
+    st.session_state.filtered_bookmarks = None
 
 # Load cached bookmarks if available
 cached_bookmarks = load_cached_bookmarks()
 
 # Function to show bookmarks as cards
 def show_cards(bookmarks):
-    if not bookmarks:
+    if len(bookmarks)==0:
         st.warning("No bookmarks to display.")
         return
 
@@ -50,7 +50,7 @@ def show_cards(bookmarks):
     for n_row, row in bookmarks_df.iterrows():
         with cols[n_row % N_cards_per_row]:
             st.caption(f"📌 {row['title']}")
-            st.markdown(f"**Cluster:** {row['cluster'] or 'Unassigned'}")
+            st.markdown(f"**Cluster:** {row['cluster'] or 'Unassigned_'}")
             st.markdown(f"📅 *Added on:* {row['added_date'] or 'Unknown'}")
             st.markdown(f"🔗 [Visit]({row['url']})")
 
@@ -64,6 +64,7 @@ if uploaded_file:
 elif cached_bookmarks:
     st.info("📌 Loaded cached bookmarks.")
     bookmarks = cached_bookmarks
+    st.session_state.clusters = list({b.cluster for b in bookmarks})
 
 # Button to trigger clustering
 if st.button("🔄 Cluster Bookmarks"):
@@ -101,9 +102,9 @@ if st.session_state.clusters:
     st.session_state.filtered_bookmarks = filtered_bookmarks  # Save filtered bookmarks
 
 # Display cards if bookmarks exist
-if st.session_state.filtered_bookmarks:
+if st.session_state.filtered_bookmarks is not None:
     show_cards(st.session_state.filtered_bookmarks)
-else:
-    show_cards(bookmarks)
+elif cached_bookmarks:
+    show_cards(cached_bookmarks)
 
 
